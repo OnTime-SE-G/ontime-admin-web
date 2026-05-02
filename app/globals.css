@@ -1,0 +1,67 @@
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=optional");
+@import "tailwindcss";
+
+:root {
+  --surface: #f8f9fa;
+  --surface-container-low: #f3f4f5;
+  --surface-container: #edeeef;
+  --surface-container-high: #e7e8e9;
+  --surface-container-highest: #e1e3e4;
+  --surface-container-lowest: #ffffff;
+  --primary: #004ac6;
+  --primary-container: #2563eb;
+  --secondary-container: #acbfff;
+  --on-secondary-container: #394c84;
+  --on-surface: #191c1d;
+  --on-surface-variant: #434655;
+  --error: #ba1a1a;
+}
+
+@theme inline {
+  --font-sans:
+    var(--font-inter), "Inter", "Segoe UI", "Helvetica Neue", Arial,
+    ui-sans-serif, system-ui, sans-serif;
+  --color-surface: var(--surface);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-surface-container-highest: var(--surface-container-highest);
+  --color-surface-container-lowest: var(--surface-container-lowest);
+  --color-primary: var(--primary);
+  --color-primary-container: var(--primary-container);
+  --color-secondary-container: var(--secondary-container);
+  --color-on-secondary-container: var(--on-secondary-container);
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-variant: var(--on-surface-variant);
+  --color-error: var(--error);
+}
+
+body {
+  background: var(--surface);
+  color: var(--on-surface);
+}
+
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
+}
+
+.shadow-soft {
+  box-shadow: 0 24px 24px -4px rgb(25 28 29 / 6%);
+}
