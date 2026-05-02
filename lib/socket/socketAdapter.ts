@@ -4,9 +4,11 @@ import { mockSimulator } from './mockSimulator';
 import { socketService } from './socketService';
 import type { SocketClient } from './socketTypes';
 
-// Decide mode based on env
+// Prefer the mock socket in development unless the env explicitly opts into the real backend.
 const USE_MOCK =
-  process.env.NEXT_PUBLIC_USE_MOCK_SOCKET?.toLowerCase() === 'true';
+  process.env.NEXT_PUBLIC_USE_MOCK_SOCKET?.toLowerCase() === 'true' ||
+  (process.env.NEXT_PUBLIC_USE_MOCK_SOCKET == null &&
+    process.env.NODE_ENV !== 'production');
 
 // Log mode
 console.log(

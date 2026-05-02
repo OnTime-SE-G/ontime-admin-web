@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { socket, type BusLocation } from '@/lib/socket/socketAdapter';
-import { useBusStore } from '@/store/busStore';
+import { useBusStore } from '@/app/store/busStore';
 
 /**
  * Hook: useBusTracking
@@ -25,6 +25,7 @@ export function useBusTracking() {
    */
   const onLocation = useCallback(
     (data: BusLocation) => {
+      console.log('[BusTracking] bus:location', data);
       updateBus(data);
     },
     [updateBus]
