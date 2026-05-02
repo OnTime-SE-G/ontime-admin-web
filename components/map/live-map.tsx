@@ -43,15 +43,42 @@ function makeBusMarkerEl(busId: string): HTMLDivElement {
   return el;
 }
 
-export function LiveMap({ routeLabel }: LiveMapProps) {
-  const mapRef  = useRef<HTMLDivElement | null>(null);
-  const mapObj  = useRef<mapboxgl.Map | null>(null);
-  const markers = useRef<Record<string, mapboxgl.Marker>>({});
+function popupHtml(
+  busId: string,
+  routeId: string,
+  routeLabel: string,
+  speed: number,
+  eta: number | undefined,
+  status: string,
+  driverName: string,
+) {
+  const statusColor = status === "active" ? "#16a34a" : "#ef4444";
+  const statusText  = status === "active" ? "On Time"  : "Delayed";
+  return `
+    <div style="font-family:sans-serif;font-size:13px;line-height:1.7;min-width:160px">
+      <strong style="font-size:14px">${busId}</strong><br/>
+      <span style="color:#64748b">Route ${routeId} · ${routeLabel}</span><br/>
+      Driver: ${driverName}<br/>
+      Speed: <strong>${Math.round(speed)} km/h</strong><br/>
+      ETA: <strong>${eta ?? "—"} min</strong><br/>
+      Status: <span style="color:${statusColor};font-weight:700">${statusText}</span>
+    </div>`;
+}
 
-  // ── Live socket data ────────────────────────────────────────────────────
+export function LiveMap({ routeLabel }: LiveMapProps) {
+  const mapRef   = useRef<HTMLDivElement | null>(null);
+  const mapObj   = useRef<mapboxgl.Map | null>(null);
+  const markers  = useRef<Record<string, mapboxgl.Marker>>({});
+
+  // ── FIX: only place markers after the map style has fully loaded ─────────
+  // Without this guard, if the socket fires before the Mapbox "load" event,
+  // addTo() is called on an unready map and the marker is silently dropped.
+  const mapReady = useRef(false);
+
+  // ── Live socket data ──────────────────────────────────────────────────────
   const { buses, connectionStatus } = useBusTracking();
 
-  // ── Map init (runs once) ────────────────────────────────────────────────
+  // ── Map init (runs once) ──────────────────────────────────────────────────
   useEffect(() => {
     if (!mapRef.current || mapObj.current) return;
 
@@ -67,6 +94,9 @@ export function LiveMap({ routeLabel }: LiveMapProps) {
     mapObj.current.addControl(new mapboxgl.NavigationControl(), "top-right");
 
     mapObj.current.on("load", () => {
+      // ── Mark map as ready before doing anything else ──────────────────
+      mapReady.current = true;
+
       const m = mapObj.current!;
 
       m.addSource("route-line", {
@@ -86,14 +116,16 @@ export function LiveMap({ routeLabel }: LiveMapProps) {
     });
 
     return () => {
+      mapReady.current = false; // reset so re-mount starts clean
       mapObj.current?.remove();
       mapObj.current = null;
     };
   }, []);
 
-  // ── Sync markers on every socket update ────────────────────────────────
+  // ── Sync markers on every socket update ───────────────────────────────────
   useEffect(() => {
-    if (!mapObj.current) return;
+    // Guard: need both the Map object AND the loaded style
+    if (!mapObj.current || !mapReady.current) return;
 
     buses.forEach((bus) => {
       const lngLat: [number, number] = [bus.lng, bus.lat];
@@ -122,7 +154,7 @@ export function LiveMap({ routeLabel }: LiveMapProps) {
       }
     });
 
-    // Remove markers for buses that left the store
+    // Remove markers for buses that are no longer in the store
     Object.keys(markers.current).forEach((id) => {
       if (!buses.has(id)) {
         markers.current[id].remove();
@@ -161,27 +193,4 @@ export function LiveMap({ routeLabel }: LiveMapProps) {
       </div>
     </div>
   );
-}
-
-// ── Popup HTML helper ──────────────────────────────────────────────────────
-function popupHtml(
-  busId: string,
-  routeId: string,
-  routeLabel: string,
-  speed: number,
-  eta: number | undefined,
-  status: string,
-  driverName: string,
-) {
-  const statusColor = status === "active" ? "#16a34a" : "#ef4444";
-  const statusText  = status === "active" ? "On Time"  : "Delayed";
-  return `
-    <div style="font-family:sans-serif;font-size:13px;line-height:1.7;min-width:160px">
-      <strong style="font-size:14px">${busId}</strong><br/>
-      <span style="color:#64748b">Route ${routeId} · ${routeLabel}</span><br/>
-      Driver: ${driverName}<br/>
-      Speed: <strong>${Math.round(speed)} km/h</strong><br/>
-      ETA: <strong>${eta ?? "—"} min</strong><br/>
-      Status: <span style="color:${statusColor};font-weight:700">${statusText}</span>
-    </div>`;
 }
