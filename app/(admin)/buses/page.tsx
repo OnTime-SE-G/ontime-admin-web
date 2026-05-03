@@ -17,6 +17,7 @@ import toast from "react-hot-toast";
 import { useMemo, useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import { useAdminStore } from "@/lib/store/admin-store";
+import { useDashboardSocket } from "@/app/hooks/useDashboardSocket";
 import type { Bus, BusStatus } from "@/lib/types";
 
 type AddBusForm = {
@@ -35,6 +36,7 @@ const defaultForm: AddBusForm = {
 
 export default function BusesPage() {
   const { buses, addBus, updateBusStatus, deleteBus } = useAdminStore();
+  const { stats } = useDashboardSocket();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editing, setEditing] = useState<Bus | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -45,11 +47,6 @@ export default function BusesPage() {
     () => buses.find((bus) => bus.id === deletingId) || null,
     [buses, deletingId],
   );
-
-  const activeBuses = buses.filter((bus) => bus.status === "Active").length;
-  const maintenanceBuses = buses.filter(
-    (bus) => bus.status === "Maintenance",
-  ).length;
 
   const openEdit = (bus: Bus) => {
     setEditing(bus);
@@ -114,10 +111,13 @@ export default function BusesPage() {
             Oversee active fleet, maintenance schedules, and route assignments
             in real-time.
           </p>
+          <p className="text-xs text-on-surface-variant mt-3">
+            Last updated: {new Date(stats.lastUpdated).toLocaleTimeString()}
+          </p>
         </div>
         <button
           onClick={() => setIsAddOpen(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-primary to-primary-container px-6 py-3 text-sm font-semibold text-white shadow-soft transition hover:scale-[0.98]"
+          className="inline-flex items-center gap-2 rounded-xl bg-linear-to-br from-primary to-primary-container px-6 py-3 text-sm font-semibold text-white shadow-soft transition hover:scale-[0.98]"
         >
           <Plus size={18} /> Add Bus
         </button>
@@ -134,7 +134,7 @@ export default function BusesPage() {
             </span>
           </div>
           <div className="text-4xl font-black text-on-surface">
-            {buses.length}
+            {stats.totalBuses}
           </div>
         </div>
 
@@ -151,7 +151,7 @@ export default function BusesPage() {
           </div>
           <div className="flex items-end gap-3">
             <div className="text-4xl font-black text-on-surface">
-              {activeBuses}
+              {stats.activeBuses}
             </div>
             <div className="relative">
               <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
@@ -171,7 +171,7 @@ export default function BusesPage() {
             </span>
           </div>
           <div className="text-4xl font-black text-on-surface">
-            {maintenanceBuses}
+            {stats.busesInMaintenance}
           </div>
         </div>
       </div>
@@ -206,7 +206,7 @@ export default function BusesPage() {
               >
                 {/* Bus Identity */}
                 <div className="flex items-center gap-4 md:w-1/4">
-                  <div className="w-12 h-12 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center flex-shrink-0">
+                  <div className="w-12 h-12 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0">
                     <BusIcon size={18} />
                   </div>
                   <div>
@@ -408,7 +408,7 @@ export default function BusesPage() {
               </button>
               <button
                 type="submit"
-                className="rounded-lg bg-gradient-to-br from-primary to-primary-container px-6 py-2 text-sm font-semibold text-white hover:scale-[0.98] transition-transform"
+                className="rounded-lg bg-linear-to-br from-primary to-primary-container px-6 py-2 text-sm font-semibold text-white hover:scale-[0.98] transition-transform"
               >
                 Add Bus
               </button>
@@ -476,7 +476,7 @@ export default function BusesPage() {
               <div className="flex gap-3 p-4 bg-amber-50 rounded-lg border border-amber-200">
                 <AlertCircle
                   size={20}
-                  className="text-amber-600 flex-shrink-0 mt-0.5"
+                  className="text-amber-600 shrink-0 mt-0.5"
                 />
                 <p className="text-sm text-amber-800">
                   Vehicle is currently undergoing maintenance. It will not be
@@ -496,7 +496,7 @@ export default function BusesPage() {
               </button>
               <button
                 type="submit"
-                className="rounded-lg bg-gradient-to-br from-primary to-primary-container px-6 py-2 text-sm font-semibold text-white hover:scale-[0.98] transition-transform"
+                className="rounded-lg bg-linear-to-br from-primary to-primary-container px-6 py-2 text-sm font-semibold text-white hover:scale-[0.98] transition-transform"
               >
                 Update Status
               </button>
@@ -513,7 +513,7 @@ export default function BusesPage() {
       >
         <div className="px-6 py-6 space-y-6">
           <div className="flex gap-4">
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <AlertCircle className="w-6 h-6 text-error mt-0.5" />
             </div>
             <div>
