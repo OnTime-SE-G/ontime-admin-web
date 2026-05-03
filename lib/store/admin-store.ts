@@ -19,6 +19,8 @@ type AdminStore = {
   buses: Bus[];
   drivers: Driver[];
   rosterAssignments: RosterAssignment[];
+  fetchRoutes: () => Promise<void>;
+  fetchBuses: () => Promise<void>;
   addRoute: (payload: NewRoute) => void;
   updateRoute: (id: string, payload: NewRoute) => void;
   deleteRoute: (id: string) => void;
@@ -136,6 +138,38 @@ export const useAdminStore = create<AdminStore>((set) => ({
   buses: initialBuses,
   drivers: initialDrivers,
   rosterAssignments: initialAssignments,
+
+  fetchRoutes: async () => {
+    try {
+      const data: { id: number; name: string }[] = await fetch('/api/routes').then(r => r.json());
+      if (!Array.isArray(data)) return;
+      const mapped: TransitRoute[] = data.map((r) => ({
+        id: String(r.id),
+        routeNumber: String(r.id),
+        startStation: r.name.split(/[-–→]/)[0]?.trim() ?? r.name,
+        endStation: r.name.split(/[-–→]/).at(-1)?.trim() ?? r.name,
+        stops: [],
+        status: 'Active',
+      }));
+      set({ routes: mapped });
+    } catch { /* keep existing data on error */ }
+  },
+
+  fetchBuses: async () => {
+    try {
+      const data: { id: string; status: string; route_id: string | null }[] =
+        await fetch('/api/buses').then(r => r.json());
+      if (!Array.isArray(data)) return;
+      const mapped: Bus[] = data.map((b) => ({
+        id: b.id,
+        busNumber: b.id,
+        busType: 'Standard',
+        status: b.status === 'active' ? 'Active' : 'Maintenance',
+        seatCapacity: 50,
+      }));
+      set({ buses: mapped });
+    } catch { /* keep existing data on error */ }
+  },
 
   addRoute: (payload) =>
     set((state) => ({

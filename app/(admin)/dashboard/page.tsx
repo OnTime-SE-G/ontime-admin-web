@@ -1,11 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useAdminStore } from "@/lib/store/admin-store";
 
 export default function DashboardPage() {
-  const { routes, buses, drivers, rosterAssignments } = useAdminStore();
+  const { routes, buses, drivers, rosterAssignments, fetchRoutes, fetchBuses } = useAdminStore();
+
+  useEffect(() => {
+    fetchRoutes();
+    fetchBuses();
+  }, [fetchRoutes, fetchBuses]);
 
   const metrics = useMemo(
     () => [
