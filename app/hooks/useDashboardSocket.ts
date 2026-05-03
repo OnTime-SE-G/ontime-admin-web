@@ -9,6 +9,9 @@ const INITIAL_STATS: DashboardStats = {
   totalBuses:      48,
   activeBuses:     32,
   assignedDrivers: 44,
+  driversOnboard:  44,
+  activeRoutes:    18,
+  busesInMaintenance: 3,
   lastUpdated:     Date.now(),
 };
 

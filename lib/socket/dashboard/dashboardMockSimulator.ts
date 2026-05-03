@@ -13,11 +13,15 @@ import type {
 // ==============================
 
 const INITIAL_STATS: DashboardStats = {
-  totalRoutes:     21,
-  totalBuses:      48,
-  activeBuses:     32,
-  assignedDrivers: 44,
-  lastUpdated:     Date.now(),
+    totalRoutes:     21,
+    totalBuses:      48,
+    activeBuses:     32,
+    assignedDrivers: 44,
+    lastUpdated:     Date.now(),
+  // Add these 3 lines inside INITIAL_STATS
+    driversOnboard:     38,
+    activeRoutes:       17,
+    busesInMaintenance:  4,
 };
 
 // ==============================
@@ -116,6 +120,12 @@ class DashboardMockSimulator implements DashboardSocketClient {
     }
 
     eventHandlers.add(handler);
+
+    // Send initial data immediately to new subscribers
+    if (event === 'dashboard:stats' && this._connected) {
+      handler(this.stats as DashboardEventMap[K]);
+    }
+
     return this;
   }
 
@@ -177,7 +187,11 @@ class DashboardMockSimulator implements DashboardSocketClient {
         totalBuses:      clamp(this.stats.totalBuses      + drift(2), 40, 60),
         activeBuses:     clamp(this.stats.activeBuses     + drift(3), 20, 40),
         assignedDrivers: clamp(this.stats.assignedDrivers + drift(2), 30, 55),
-        lastUpdated:     Date.now(),
+        // Add these 3 lines inside the setInterval stats reassignment
+        driversOnboard:     clamp(this.stats.driversOnboard     + drift(2),  25, 50),
+        activeRoutes:       clamp(this.stats.activeRoutes       + drift(1),  12, 21),
+        busesInMaintenance: clamp(this.stats.busesInMaintenance + drift(1),   0, 10),
+        lastUpdated: Date.now(),
       };
 
       this._pushStats();

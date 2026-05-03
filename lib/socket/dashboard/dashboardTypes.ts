@@ -3,11 +3,16 @@
 // ==============================
 
 export type DashboardStats = {
-  totalRoutes:     number;
-  totalBuses:      number;
-  activeBuses:     number;
-  assignedDrivers: number;
-  lastUpdated:     number; // epoch ms
+
+    totalRoutes:     number;
+    totalBuses:      number;
+    activeBuses:     number;
+    assignedDrivers: number;
+  // Add these 3 lines inside DashboardStats type
+    driversOnboard:     number;
+    activeRoutes:       number;
+    busesInMaintenance: number;
+    lastUpdated:     number; // epoch ms
 };
 
 export type DisconnectReason =

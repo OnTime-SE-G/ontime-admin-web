@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useAdminStore } from "@/lib/store/admin-store";
+// import { useAdminStore } from "@/lib/store/admin-store";
 import { useDashboardSocket } from "@/app/hooks/useDashboardSocket";
 import { Wifi, WifiOff } from "lucide-react";
 
 export default function DashboardPage() {
   const { stats, isConnected, isLoading } = useDashboardSocket();
-  const { routes, buses, drivers } = useAdminStore();
+  // const { routes, buses, drivers } = useAdminStore();
 
   const metrics = [
     { label: "Total Routes",     value: stats.totalRoutes     },
@@ -100,16 +100,26 @@ export default function DashboardPage() {
         <div className="rounded-xl bg-surface-container-lowest p-6 shadow-soft">
           <h4 className="text-lg font-bold">Operations Pulse</h4>
           <div className="mt-4 space-y-3 text-sm">
-            <div className="rounded-lg bg-surface-container-low p-3">
-              {drivers.length} drivers onboard
-            </div>
-            <div className="rounded-lg bg-surface-container-low p-3">
-              {routes.filter((r) => r.status === "Active").length} active routes
-            </div>
-            <div className="rounded-lg bg-surface-container-low p-3">
-              {buses.filter((b) => b.status === "Maintenance").length} buses in
-              maintenance
-            </div>
+            {isLoading ? (
+              <>
+                <div className="h-6 w-24 animate-pulse rounded-lg bg-surface-container-high" />
+                <div className="h-6 w-24 animate-pulse rounded-lg bg-surface-container-high" />
+                <div className="h-6 w-24 animate-pulse rounded-lg bg-surface-container-high" />
+              </>
+            ) : (
+              <>
+                <div className="rounded-lg bg-surface-container-low p-3">
+                  {stats.driversOnboard} drivers onboard
+                </div>
+                <div className="rounded-lg bg-surface-container-low p-3">
+                  {stats.activeRoutes} active routes
+                </div>
+                <div className="rounded-lg bg-surface-container-low p-3">
+                  {stats.busesInMaintenance} buses in
+                  maintenance
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
