@@ -5,9 +5,10 @@ import { Bell, CircleHelp, Menu, Search } from "lucide-react";
 type TopbarProps = {
   onMenuClick: () => void;
   onNotificationsClick: () => void;
+  unreadCount?: number; // ← new
 };
 
-export function Topbar({ onMenuClick, onNotificationsClick }: TopbarProps) {
+export function Topbar({ onMenuClick, onNotificationsClick, unreadCount = 0 }: TopbarProps) {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200/60 bg-slate-50/80 px-4 backdrop-blur-xl sm:px-8">
       <div className="flex items-center gap-4">
@@ -35,14 +36,22 @@ export function Topbar({ onMenuClick, onNotificationsClick }: TopbarProps) {
       </div>
 
       <div className="flex items-center gap-3">
+
+        {/* Bell with unread badge */}
         <button
           type="button"
-          className="rounded-full p-2 text-on-surface-variant transition hover:bg-surface-container-high hover:text-on-surface"
+          className="relative rounded-full p-2 text-on-surface-variant transition hover:bg-surface-container-high hover:text-on-surface"
           onClick={onNotificationsClick}
           aria-label="Open notifications"
         >
           <Bell size={18} />
+          {unreadCount > 0 && (
+            <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
         </button>
+
         <button
           type="button"
           className="rounded-full p-2 text-on-surface-variant transition hover:bg-surface-container-high hover:text-on-surface"
@@ -50,7 +59,8 @@ export function Topbar({ onMenuClick, onNotificationsClick }: TopbarProps) {
         >
           <CircleHelp size={18} />
         </button>
-        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-primary-container" />
+
+        <div className="h-8 w-8 rounded-full bg-linear-to-br from-primary to-primary-container" />
       </div>
     </header>
   );
