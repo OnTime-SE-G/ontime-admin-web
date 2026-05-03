@@ -1,3 +1,4 @@
+//mocksimulator for live bus location updates without needing a real socket connection or backend server. It simulates bus movements and emits location updates at regular intervals.
 import type { BusLocation } from './socketService';
 import type {
   SocketClient,
