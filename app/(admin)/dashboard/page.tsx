@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import { useAdminStore } from "@/lib/store/admin-store";
 
 export default function DashboardPage() {
-  const { routes, buses, drivers, rosterAssignments } = useAdminStore();
+  const { routes, buses, drivers } = useAdminStore();
 
   const metrics = useMemo(
     () => [
@@ -16,11 +16,11 @@ export default function DashboardPage() {
         value: buses.filter((bus) => bus.status === "Active").length,
       },
       {
-        label: "Assigned Drivers",
-        value: rosterAssignments.length,
+        label: "Total Drivers",
+        value: drivers.length,
       },
     ],
-    [routes, buses, rosterAssignments],
+    [routes, buses, drivers],
   );
 
   return (

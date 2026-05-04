@@ -1,11 +1,9 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
-import { useMemo, useState } from "react";
-import { Modal } from "@/components/ui/modal";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { useEffect, useState } from "react";
 import { Table } from "@/components/ui/table";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { useAdminStore } from "@/lib/store/admin-store";
 
 export default function RosterPage() {
@@ -13,220 +11,173 @@ export default function RosterPage() {
     routes,
     buses,
     drivers,
-    rosterAssignments,
-    assignRoster,
-    deleteAssignment,
+    plannedTrips,
+    loadTodayTrips,
+    loadBuses,
+    loadDrivers,
+    loadRoutes,
+    generateTodayTrips,
+    assignTrip,
   } = useAdminStore();
 
-  const [selectedRouteId, setSelectedRouteId] = useState("");
-  const [selectedBusId, setSelectedBusId] = useState("");
-  const [selectedDriverId, setSelectedDriverId] = useState("");
-  const [deletingAssignmentId, setDeletingAssignmentId] = useState<
-    string | null
-  >(null);
+  const [generating, setGenerating] = useState(false);
+  // per-trip selected bus/driver while assigning
+  const [pendingBus, setPendingBus] = useState<Record<string, string>>({});
+  const [pendingDriver, setPendingDriver] = useState<Record<string, string>>({});
+  const [assigning, setAssigning] = useState<string | null>(null);
 
-  const assignedBusIds = new Set(
-    rosterAssignments.map((assignment) => assignment.busId),
-  );
-  const assignedDriverIds = new Set(
-    rosterAssignments.map((assignment) => assignment.driverId),
-  );
+  useEffect(() => {
+    void Promise.all([loadTodayTrips(), loadBuses(), loadDrivers(), loadRoutes()]);
+  }, [loadTodayTrips, loadBuses, loadDrivers, loadRoutes]);
 
-  const availableBuses = buses.filter(
-    (bus) => bus.status === "Active" && !assignedBusIds.has(bus.id),
-  );
-
-  const availableDrivers = drivers.filter(
-    (driver) => driver.status === "Active" && !assignedDriverIds.has(driver.id),
-  );
-
-  const deletingAssignment = useMemo(
-    () =>
-      rosterAssignments.find(
-        (assignment) => assignment.id === deletingAssignmentId,
-      ) || null,
-    [rosterAssignments, deletingAssignmentId],
-  );
-
-  const handleAssign = () => {
-    if (!selectedRouteId || !selectedBusId || !selectedDriverId) {
-      toast.error("Please select route, bus and driver");
-      return;
+  const handleGenerate = async () => {
+    setGenerating(true);
+    try {
+      await generateTodayTrips();
+      await loadTodayTrips();
+      toast.success("Trips generated for today");
+    } catch {
+      toast.error("Failed to generate trips");
+    } finally {
+      setGenerating(false);
     }
-
-    assignRoster(selectedRouteId, selectedBusId, selectedDriverId);
-    toast.success("Added successfully");
-    setSelectedRouteId("");
-    setSelectedBusId("");
-    setSelectedDriverId("");
   };
 
-  const confirmDelete = () => {
-    if (!deletingAssignmentId) {
+  const handleAssign = async (tripId: string) => {
+    const busId = pendingBus[tripId];
+    const driverId = pendingDriver[tripId];
+    if (!busId || !driverId) {
+      toast.error("Select both a bus and a driver");
       return;
     }
-
-    deleteAssignment(deletingAssignmentId);
-    toast.success("Deleted successfully");
-    setDeletingAssignmentId(null);
+    setAssigning(tripId);
+    try {
+      await assignTrip(tripId, Number(busId), Number(driverId));
+      toast.success("Assigned successfully");
+      setPendingBus((p) => { const c = { ...p }; delete c[tripId]; return c; });
+      setPendingDriver((p) => { const c = { ...p }; delete c[tripId]; return c; });
+    } catch {
+      toast.error("Failed to assign");
+    } finally {
+      setAssigning(null);
+    }
   };
+
+  const tripStatusLabel = (status: string) => {
+    if (status === "WAITING_AT_DEPOT") return "Not Started";
+    if (status === "EN_ROUTE") return "En Route";
+    if (status === "ARRIVED_DESTINATION") return "Arrived";
+    if (status === "INCIDENT_REPORTED") return "Incident";
+    return status;
+  };
+
+  const selectClass =
+    "w-full rounded-xl bg-surface-container-high px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30";
 
   return (
     <section className="space-y-6">
-      <div>
-        <h1 className="text-4xl font-black tracking-tight">
-          Roster Management
-        </h1>
-        <p className="text-sm text-on-surface-variant">
-          Assign routes, active buses and available drivers
-        </p>
-      </div>
-
-      <div className="grid gap-3 rounded-xl bg-surface-container-lowest p-4 shadow-soft md:grid-cols-4">
-        <label className="text-sm">
-          <span className="mb-2 block font-semibold text-on-surface-variant">
-            Select Route
-          </span>
-          <select
-            value={selectedRouteId}
-            onChange={(event) => setSelectedRouteId(event.target.value)}
-            className="w-full rounded-xl bg-surface-container-high px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/30"
-          >
-            <option value="">Select route</option>
-            {routes.map((route) => (
-              <option key={route.id} value={route.id}>
-                {route.startStation}
-                {" -> "}
-                {route.endStation}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="text-sm">
-          <span className="mb-2 block font-semibold text-on-surface-variant">
-            Select Bus
-          </span>
-          <select
-            value={selectedBusId}
-            onChange={(event) => setSelectedBusId(event.target.value)}
-            className="w-full rounded-xl bg-surface-container-high px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/30"
-          >
-            <option value="">Select bus</option>
-            {availableBuses.map((bus) => (
-              <option key={bus.id} value={bus.id}>
-                {bus.busNumber} ({bus.busType})
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="text-sm">
-          <span className="mb-2 block font-semibold text-on-surface-variant">
-            Select Driver
-          </span>
-          <select
-            value={selectedDriverId}
-            onChange={(event) => setSelectedDriverId(event.target.value)}
-            className="w-full rounded-xl bg-surface-container-high px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/30"
-          >
-            <option value="">Select driver</option>
-            {availableDrivers.map((driver) => (
-              <option key={driver.id} value={driver.id}>
-                {driver.name}
-              </option>
-            ))}
-          </select>
-        </label>
-
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-4xl font-black tracking-tight">Roster Management</h1>
+          <p className="text-sm text-on-surface-variant">
+            Assign buses and drivers to today&apos;s planned trips
+          </p>
+        </div>
         <button
           type="button"
-          onClick={handleAssign}
-          className="self-end rounded-xl bg-gradient-to-br from-primary to-primary-container px-4 py-2.5 text-sm font-semibold text-white"
+          onClick={handleGenerate}
+          disabled={generating}
+          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-primary to-primary-container px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
         >
-          Assign
+          {generating ? "Generating..." : "Generate Today's Trips"}
         </button>
       </div>
 
-      <Table>
-        <thead>
-          <tr className="bg-surface-container-low text-on-surface-variant">
-            <th className="px-5 py-4 text-left">Route</th>
-            <th className="px-5 py-4 text-left">Bus</th>
-            <th className="px-5 py-4 text-left">Driver</th>
-            <th className="px-5 py-4 text-left">Status</th>
-            <th className="px-5 py-4 text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rosterAssignments.map((assignment) => {
-            const route = routes.find((item) => item.id === assignment.routeId);
-            const bus = buses.find((item) => item.id === assignment.busId);
-            const driver = drivers.find(
-              (item) => item.id === assignment.driverId,
-            );
+      {plannedTrips.length === 0 ? (
+        <p className="text-sm text-on-surface-variant">
+          No trips for today. Click &quot;Generate Today&apos;s Trips&quot; to create them from schedules.
+        </p>
+      ) : (
+        <Table>
+          <thead>
+            <tr className="bg-surface-container-low text-on-surface-variant">
+              <th className="px-5 py-4 text-left">Route</th>
+              <th className="px-5 py-4 text-left">Status</th>
+              <th className="px-5 py-4 text-left">Bus</th>
+              <th className="px-5 py-4 text-left">Driver</th>
+              <th className="px-5 py-4 text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {plannedTrips.map((trip) => {
+              const schedule = trip.scheduleId;
+              const route = routes.find((r) => r.id === String(schedule)) ?? routes[0];
+              const assignedBus = buses.find((b) => String(b.id) === String(trip.busId));
+              const assignedDriver = drivers.find((d) => d.id === String(trip.driverId));
+              const isAssigned = trip.busId !== null && trip.driverId !== null;
 
-            return (
-              <tr
-                key={assignment.id}
-                className="border-t border-surface-container-high"
-              >
-                <td className="px-5 py-4 font-semibold">
-                  {route
-                    ? `${route.startStation} -> ${route.endStation}`
-                    : "Route removed"}
-                </td>
-                <td className="px-5 py-4 text-on-surface-variant">
-                  {bus?.busNumber || "Bus removed"}
-                </td>
-                <td className="px-5 py-4 text-on-surface-variant">
-                  {driver?.name || "Driver removed"}
-                </td>
-                <td className="px-5 py-4">
-                  <StatusBadge status={assignment.status} />
-                </td>
-                <td className="px-5 py-4 text-right">
-                  <button
-                    type="button"
-                    onClick={() => setDeletingAssignmentId(assignment.id)}
-                    className="rounded-lg bg-surface-container-high p-2 text-on-surface-variant transition hover:text-error"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </Table>
-
-      <Modal
-        isOpen={Boolean(deletingAssignment)}
-        onClose={() => setDeletingAssignmentId(null)}
-        title="Delete Assignment"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-on-surface-variant">
-            Remove this roster assignment?
-          </p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setDeletingAssignmentId(null)}
-              className="rounded-xl bg-surface-container-high px-4 py-2 text-sm font-semibold"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={confirmDelete}
-              className="rounded-xl bg-error px-4 py-2 text-sm font-semibold text-white"
-            >
-              Delete
-            </button>
-          </div>
-        </div>
-      </Modal>
+              return (
+                <tr key={trip.id} className="border-t border-surface-container-high">
+                  <td className="px-5 py-4 font-semibold">
+                    {route ? `${route.startStation} → ${route.endStation}` : `Schedule #${schedule}`}
+                  </td>
+                  <td className="px-5 py-4">
+                    <StatusBadge status={tripStatusLabel(trip.status)} />
+                  </td>
+                  <td className="px-5 py-4">
+                    {isAssigned ? (
+                      <span className="text-sm text-on-surface-variant">
+                        {assignedBus?.busNumber ?? `Bus #${trip.busId}`}
+                      </span>
+                    ) : (
+                      <select
+                        value={pendingBus[trip.id] ?? ""}
+                        onChange={(e) => setPendingBus((p) => ({ ...p, [trip.id]: e.target.value }))}
+                        className={selectClass}
+                      >
+                        <option value="">Select bus</option>
+                        {buses.map((b) => (
+                          <option key={b.id} value={b.id}>{b.busNumber}</option>
+                        ))}
+                      </select>
+                    )}
+                  </td>
+                  <td className="px-5 py-4">
+                    {isAssigned ? (
+                      <span className="text-sm text-on-surface-variant">
+                        {assignedDriver?.name ?? `Driver #${trip.driverId}`}
+                      </span>
+                    ) : (
+                      <select
+                        value={pendingDriver[trip.id] ?? ""}
+                        onChange={(e) => setPendingDriver((p) => ({ ...p, [trip.id]: e.target.value }))}
+                        className={selectClass}
+                      >
+                        <option value="">Select driver</option>
+                        {drivers.map((d) => (
+                          <option key={d.id} value={d.id}>{d.name}</option>
+                        ))}
+                      </select>
+                    )}
+                  </td>
+                  <td className="px-5 py-4 text-right">
+                    {!isAssigned && (
+                      <button
+                        type="button"
+                        disabled={assigning === trip.id}
+                        onClick={() => handleAssign(trip.id)}
+                        className="rounded-xl bg-gradient-to-br from-primary to-primary-container px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+                      >
+                        {assigning === trip.id ? "..." : "Assign"}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </Table>
+      )}
     </section>
   );
 }

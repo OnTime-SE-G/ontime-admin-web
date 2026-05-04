@@ -1,44 +1,44 @@
 "use client";
 
 import { Bus, MapPin } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { LiveMap } from "@/components/map/live-map";
 import { Modal } from "@/components/ui/modal";
 import { useAdminStore } from "@/lib/store/admin-store";
 
 export default function ActiveBusesPage() {
-  const { buses, routes, drivers, rosterAssignments } = useAdminStore();
+  const { buses, routes, drivers, plannedTrips, loadBuses, loadRoutes, loadDrivers, loadTodayTrips } = useAdminStore();
+
+  useEffect(() => {
+    void Promise.all([loadBuses(), loadRoutes(), loadDrivers(), loadTodayTrips()]);
+  }, [loadBuses, loadRoutes, loadDrivers, loadTodayTrips]);
   const [mapAssignmentId, setMapAssignmentId] = useState<string | null>(null);
 
   const activeAssignments = useMemo(
     () =>
-      rosterAssignments
-        .map((assignment) => {
-          const bus = buses.find((item) => item.id === assignment.busId);
-          const route = routes.find((item) => item.id === assignment.routeId);
-          const driver = drivers.find(
-            (item) => item.id === assignment.driverId,
-          );
-
-          if (!bus || !route || !driver || bus.status !== "Active") {
-            return null;
-          }
+      plannedTrips
+        .filter((trip) => trip.status === "in_progress")
+        .map((trip) => {
+          const bus = buses.find((b) => String(b.id) === String(trip.busId));
+          const route = routes.find((r) => Number(r.id) === trip.scheduleId);
+          const driver = drivers.find((d) => String(d.id) === String(trip.driverId));
 
           return {
-            assignmentId: assignment.id,
-            busNumber: bus.busNumber,
-            routeLabel: `${route.startStation} → ${route.endStation}`,
-            startStation: route.startStation,
-            endStation: route.endStation,
-            driverName: driver.name,
+            assignmentId: trip.id,
+            busNumber: bus?.busNumber ?? `Bus #${trip.busId ?? "—"}`,
+            routeLabel: route
+              ? `${route.startStation} → ${route.endStation}`
+              : "—",
+            startStation: route?.startStation ?? "—",
+            endStation: route?.endStation ?? "—",
+            driverName: driver?.name ?? "Unassigned",
           };
-        })
-        .filter(Boolean),
-    [rosterAssignments, buses, routes, drivers],
+        }),
+    [plannedTrips, buses, routes, drivers],
   );
 
   const selected = activeAssignments.find(
-    (assignment) => assignment?.assignmentId === mapAssignmentId,
+    (assignment) => assignment.assignmentId === mapAssignmentId,
   );
 
   return (

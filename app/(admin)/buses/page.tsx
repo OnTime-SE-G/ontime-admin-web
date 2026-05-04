@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import { useAdminStore } from "@/lib/store/admin-store";
 import type { Bus, BusStatus } from "@/lib/types";
@@ -34,12 +34,14 @@ const defaultForm: AddBusForm = {
 };
 
 export default function BusesPage() {
-  const { buses, addBus, updateBusStatus, deleteBus } = useAdminStore();
+  const { buses, addBus, updateBusStatus, deleteBus, loadBuses } = useAdminStore();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editing, setEditing] = useState<Bus | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [form, setForm] = useState(defaultForm);
   const [editStatus, setEditStatus] = useState<BusStatus>("Active");
+
+  useEffect(() => { loadBuses(); }, [loadBuses]);
 
   const deletingBus = useMemo(
     () => buses.find((bus) => bus.id === deletingId) || null,
@@ -56,13 +58,13 @@ export default function BusesPage() {
     setEditStatus(bus.status);
   };
 
-  const handleAdd = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleAdd = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!form.busNumber || !form.busType || !form.seatCapacity) {
       toast.error("Please fill all fields");
       return;
     }
-    addBus({
+    await addBus({
       busNumber: form.busNumber,
       busType: form.busType,
       status: form.status,
@@ -73,23 +75,17 @@ export default function BusesPage() {
     setForm(defaultForm);
   };
 
-  const handleEdit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleEdit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!editing) {
-      return;
-    }
-
-    updateBusStatus(editing.id, editStatus);
+    if (!editing) return;
+    await updateBusStatus(editing.id, editStatus);
     toast.success("Bus status updated successfully");
     setEditing(null);
   };
 
-  const confirmDelete = () => {
-    if (!deletingId) {
-      return;
-    }
-
-    deleteBus(deletingId);
+  const confirmDelete = async () => {
+    if (!deletingId) return;
+    await deleteBus(deletingId);
     toast.success("Bus deleted successfully");
     setDeletingId(null);
   };
