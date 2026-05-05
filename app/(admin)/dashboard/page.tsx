@@ -1,11 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useAdminStore } from "@/lib/store/admin-store";
 
 export default function DashboardPage() {
-  const { routes, buses, drivers } = useAdminStore();
+  const { routes, buses, drivers, loadRoutes, loadBuses, loadDrivers } = useAdminStore();
+
+  useEffect(() => {
+    void Promise.all([loadRoutes(), loadBuses(), loadDrivers()]);
+  }, [loadRoutes, loadBuses, loadDrivers]);
 
   const metrics = useMemo(
     () => [

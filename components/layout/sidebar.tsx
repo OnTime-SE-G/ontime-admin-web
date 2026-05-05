@@ -3,6 +3,7 @@
 import clsx from "clsx";
 import {
   Bus,
+  CalendarClock,
   CalendarDays,
   Gauge,
   LogOut,
@@ -24,6 +25,7 @@ const navLinks = [
   { href: "/routes", label: "Route Management", icon: Route },
   { href: "/buses", label: "Bus Fleet", icon: Bus },
   { href: "/drivers", label: "Driver Management", icon: User },
+  { href: "/schedules", label: "Schedules", icon: CalendarClock },
   { href: "/roster", label: "Roster Management", icon: CalendarDays },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

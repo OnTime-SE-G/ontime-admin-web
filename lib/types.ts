@@ -16,6 +16,7 @@ export type Bus = {
   busType: string;
   status: BusStatus;
   seatCapacity: number;
+  routeId: string | null;
 };
 
 // Matches backend DriverResponse — only fields the API supports

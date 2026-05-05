@@ -4,6 +4,7 @@ import { create } from "zustand";
 import type { Bus, BusStatus, Driver, PlannedTrip, Schedule, TransitRoute } from "@/lib/types";
 import {
   fetchRoutes,
+  fetchAllAdminBuses,
   fetchLiveBuses,
   createBus,
   updateBus,
@@ -11,12 +12,18 @@ import {
   deleteRouteApi,
   fetchDrivers,
   createDriver,
+  deleteDriverApi,
   fetchSchedules,
   createSchedule as createScheduleApi,
   fetchTodayTrips,
   generateTrips,
   assignTripResources,
+  overrideTripDelay,
+  logTripIncident,
+  assignBusToRoute as assignBusToRouteApi,
+  unassignBus as unassignBusApi,
   type ApiRoute,
+  type ApiAdminBus,
   type ApiLiveBus,
   type ApiDriver,
   type ApiSchedule,
@@ -46,15 +53,16 @@ type AdminStore = {
   deleteBus: (id: string) => Promise<void>;
 
   addDriver: (data: { name: string; license_number: string; phone?: string }) => Promise<void>;
+  deleteDriver: (id: string) => Promise<void>;
+  assignBusToRoute: (busId: string, routeId: string) => Promise<void>;
+  unassignBus: (busId: string) => Promise<void>;
   addSchedule: (data: { route_id: number; scheduled_time: string; day_of_week: number }) => Promise<void>;
   generateTodayTrips: () => Promise<void>;
   assignTrip: (tripId: string, busId: number, driverId: number) => Promise<void>;
+  overrideDelay: (tripId: string, delayMinutes: number) => Promise<void>;
+  logIncident: (tripId: string, incidentType: string, description?: string) => Promise<void>;
+  updateBusFull: (id: string, data: { fleet_code?: string; plate_number?: string; capacity?: number; status?: string }) => Promise<void>;
 };
-
-const makeId = () =>
-  typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : Math.random().toString(36).slice(2);
 
 function mapApiRoute(r: ApiRoute): TransitRoute {
   const parts = r.name.split(" - ");
@@ -68,13 +76,14 @@ function mapApiRoute(r: ApiRoute): TransitRoute {
   };
 }
 
-function mapApiBus(b: ApiLiveBus): Bus {
+function mapApiBus(b: ApiAdminBus | ApiLiveBus): Bus {
   return {
     id: b.id,
-    busNumber: b.plate_number || b.id,
+    busNumber: (b as ApiAdminBus).plate_number || b.id,
     busType: b.fleet_code || "Standard",
     status: ["active", "Active", "ACTIVE"].includes(b.status) ? "Active" : "Maintenance",
-    seatCapacity: 0,
+    seatCapacity: (b as ApiAdminBus).capacity ?? 0,
+    routeId: (b as ApiAdminBus).route_id ?? null,
   };
 }
 
@@ -131,7 +140,13 @@ export const useAdminStore = create<AdminStore>((set) => ({
   loadBuses: async () => {
     set({ isLoading: true });
     try {
-      const data = await fetchLiveBuses();
+      // Try the admin endpoint first (has capacity); fall back to live buses if it fails
+      let data;
+      try {
+        data = await fetchAllAdminBuses();
+      } catch {
+        data = await fetchLiveBuses();
+      }
       set({ buses: data.map(mapApiBus), isLoading: false });
     } catch (e) {
       console.error("[AdminStore] loadBuses failed:", e);
@@ -182,16 +197,19 @@ export const useAdminStore = create<AdminStore>((set) => ({
   },
 
   addBus: async (payload) => {
+    await createBus({
+      fleet_code: payload.busType || "Standard",
+      plate_number: payload.busNumber,
+      capacity: payload.seatCapacity,
+    });
+    // Re-fetch from API to get server-assigned ID and reflect real state
     try {
-      await createBus({
-        fleet_code: payload.busType || "Standard",
-        plate_number: payload.busNumber,
-        capacity: payload.seatCapacity,
-      });
+      let data;
+      try { data = await fetchAllAdminBuses(); } catch { data = await fetchLiveBuses(); }
+      set({ buses: data.map(mapApiBus) });
     } catch (e) {
-      console.warn("[AdminStore] createBus API failed:", e);
+      console.warn("[AdminStore] addBus re-fetch failed:", e);
     }
-    set((state) => ({ buses: [...state.buses, { id: makeId(), ...payload }] }));
   },
 
   updateBusStatus: async (id, status) => {
@@ -205,18 +223,63 @@ export const useAdminStore = create<AdminStore>((set) => ({
     }));
   },
 
-  deleteBus: async (id) => {
+  updateBusFull: async (id, data) => {
+    await updateBus(id, data);
+    // Re-fetch to get fresh state
     try {
-      await deleteBusApi(id);
+      let fresh;
+      try { fresh = await fetchAllAdminBuses(); } catch { fresh = await fetchLiveBuses(); }
+      set({ buses: fresh.map(mapApiBus) });
     } catch (e) {
-      console.warn("[AdminStore] deleteBus API failed:", e);
+      console.warn("[AdminStore] updateBusFull re-fetch failed:", e);
     }
+  },
+
+  deleteBus: async (id) => {
+    await deleteBusApi(id);
     set((state) => ({ buses: state.buses.filter((b) => b.id !== id) }));
   },
 
   addDriver: async (data) => {
     const created = await createDriver(data);
     set((state) => ({ drivers: [...state.drivers, mapApiDriver(created)] }));
+  },
+
+  deleteDriver: async (id) => {
+    await deleteDriverApi(id);
+    set((state) => ({ drivers: state.drivers.filter((d) => d.id !== id) }));
+  },
+
+  assignBusToRoute: async (busId, routeId) => {
+    await assignBusToRouteApi(busId, routeId);
+    set((state) => ({
+      buses: state.buses.map((b) => b.id === busId ? { ...b, routeId } : b),
+    }));
+  },
+
+  unassignBus: async (busId) => {
+    await unassignBusApi(busId);
+    set((state) => ({
+      buses: state.buses.map((b) => b.id === busId ? { ...b, routeId: null } : b),
+    }));
+  },
+
+  overrideDelay: async (tripId, delayMinutes) => {
+    const updated = await overrideTripDelay(tripId, delayMinutes);
+    set((state) => ({
+      plannedTrips: state.plannedTrips.map((t) =>
+        t.id === tripId ? mapApiTrip(updated) : t,
+      ),
+    }));
+  },
+
+  logIncident: async (tripId, incidentType, description) => {
+    const updated = await logTripIncident(tripId, incidentType, description);
+    set((state) => ({
+      plannedTrips: state.plannedTrips.map((t) =>
+        t.id === tripId ? mapApiTrip(updated) : t,
+      ),
+    }));
   },
 
   addSchedule: async (data) => {

@@ -81,6 +81,20 @@ export const deleteRouteApi = (id: string) =>
 
 // ── Buses ─────────────────────────────────────────────────────────────────────
 
+export type ApiAdminBus = {
+  id: string;
+  fleet_code: string;
+  plate_number: string;
+  capacity: number | null;
+  status: string;
+  route_id: string | null;
+  latitude: number | null;
+  longitude: number | null;
+};
+
+export const fetchAllAdminBuses = () =>
+  apiFetch<ApiAdminBus[]>('/api/v1/admin/fleet/buses');
+
 export const fetchLiveBuses = () =>
   apiFetch<ApiLiveBus[]>('/api/v1/buses/live');
 
@@ -124,6 +138,9 @@ export const createDriver = (data: { name: string; license_number: string; phone
     body: JSON.stringify(data),
   });
 
+export const deleteDriverApi = (id: string) =>
+  apiFetch<Record<string, unknown>>(`/api/v1/admin/fleet/drivers/${id}`, { method: 'DELETE' });
+
 // ── Schedules ─────────────────────────────────────────────────────────────────
 
 export const fetchSchedules = () =>
@@ -156,3 +173,20 @@ export const assignTripResources = (tripId: string, busId: number, driverId: num
     `/api/v1/admin/fleet/planned-trips/${tripId}/assign?bus_id=${busId}&driver_id=${driverId}`,
     { method: 'PATCH' },
   );
+
+export const overrideTripDelay = (tripId: string, delayMinutes: number) =>
+  apiFetch<ApiPlannedTrip>(`/api/v1/admin/fleet/planned-trips/${tripId}/delay`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ delay_minutes: delayMinutes }),
+  });
+
+export const logTripIncident = (tripId: string, incidentType: string, description?: string) =>
+  apiFetch<ApiPlannedTrip>(`/api/v1/admin/fleet/planned-trips/${tripId}/incident`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ incident_type: incidentType, description }),
+  });
+
+export const fetchTripState = (tripId: string) =>
+  apiFetch<Record<string, unknown>>(`/api/v1/trips/${tripId}/state`);
