@@ -1,6 +1,5 @@
 export type RouteStatus = "Active" | "Inactive";
 export type BusStatus = "Active" | "Maintenance";
-export type DriverStatus = "Active" | "On Vacation";
 
 export type TransitRoute = {
   id: string;
@@ -17,23 +16,31 @@ export type Bus = {
   busType: string;
   status: BusStatus;
   seatCapacity: number;
+  routeId: string | null;
 };
 
+// Matches backend DriverResponse — only fields the API supports
 export type Driver = {
   id: string;
   name: string;
-  idNumber: string;
   licenseNumber: string;
-  age: number;
-  birthdate: string;
-  address: string;
-  status: DriverStatus;
+  phone: string;
 };
 
-export type RosterAssignment = {
+export type Schedule = {
   id: string;
-  routeId: string;
-  busId: string;
-  driverId: string;
-  status: "Assigned";
+  routeId: number;
+  scheduledTime: string;
+  dayOfWeek: number;
+};
+
+export type PlannedTrip = {
+  id: string;
+  scheduleId: number;
+  busId: number | null;
+  driverId: number | null;
+  date: string;
+  status: string;
+  delayMinutes: number;
+  lastIncidentType: string | null;
 };
