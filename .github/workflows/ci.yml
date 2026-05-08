@@ -257,7 +257,7 @@ jobs:
     needs: [integration_test]
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     env:
-      KUBE_CONFIG_B64: ${{ vars.KUBE_CONFIG_B64 }}
+      KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
     steps:
       # Deploy only on main pushes and only when kubeconfig + manifests exist
       - name: Checkout
