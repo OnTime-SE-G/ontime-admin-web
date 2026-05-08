@@ -7,6 +7,12 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+ARG NEXT_PUBLIC_G2_BASE_URL=https://api.on-time.live
+ARG NEXT_PUBLIC_SOCKET_URL=wss://api.on-time.live/v1/live
+ARG NEXT_PUBLIC_USE_MOCK=false
+ENV NEXT_PUBLIC_G2_BASE_URL=$NEXT_PUBLIC_G2_BASE_URL
+ENV NEXT_PUBLIC_SOCKET_URL=$NEXT_PUBLIC_SOCKET_URL
+ENV NEXT_PUBLIC_USE_MOCK=$NEXT_PUBLIC_USE_MOCK
 RUN npm run build
 
 FROM node:20-alpine AS runner
