@@ -6,13 +6,24 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 
 export function LoginCard() {
+  const [form, setForm] = useState({ username: "", password: "" });
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (event: React.SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
     try {
-      await signIn("keycloak", { callbackUrl: "/dashboard" });
+      const res = await signIn("credentials", {
+        username: form.username,
+        password: form.password,
+        redirect: false,
+      });
+      if (res?.error) {
+        toast.error("Invalid credentials. Please try again.");
+        setLoading(false);
+      } else {
+        window.location.href = "/dashboard";
+      }
     } catch {
       toast.error("Authentication failed. Please try again.");
       setLoading(false);
@@ -46,9 +57,11 @@ export function LoginCard() {
               <input
                 id="operator-id"
                 type="text"
-                disabled
-                placeholder="Provided by Keycloak"
-                className="block w-full rounded-lg border-0 bg-surface-container-high py-3 pl-10 pr-3 text-sm text-on-surface-variant placeholder:text-on-surface-variant outline-none opacity-60"
+                required
+                value={form.username}
+                onChange={(e) => setForm((p) => ({ ...p, username: e.target.value }))}
+                placeholder="Enter your operator ID"
+                className="block w-full rounded-lg border-0 bg-surface-container-high py-3 pl-10 pr-3 text-sm text-on-surface placeholder:text-on-surface-variant outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
           </div>
@@ -67,9 +80,11 @@ export function LoginCard() {
               <input
                 id="passcode"
                 type="password"
-                disabled
-                placeholder="Provided by Keycloak"
-                className="block w-full rounded-lg border-0 bg-surface-container-high py-3 pl-10 pr-3 text-sm text-on-surface-variant placeholder:text-on-surface-variant outline-none opacity-60"
+                required
+                value={form.password}
+                onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
+                placeholder="Enter your passcode"
+                className="block w-full rounded-lg border-0 bg-surface-container-high py-3 pl-10 pr-3 text-sm text-on-surface placeholder:text-on-surface-variant outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
           </div>
@@ -79,7 +94,7 @@ export function LoginCard() {
             disabled={loading}
             className="w-full rounded-lg bg-gradient-to-br from-primary to-primary-container px-4 py-3 text-sm font-semibold text-white shadow-soft transition-all hover:from-primary-container hover:to-primary active:scale-[0.98] disabled:opacity-60"
           >
-            {loading ? "Redirecting to login..." : "Initiate Shift"}
+            {loading ? "Authenticating..." : "Initiate Shift"}
           </button>
         </form>
       </div>
