@@ -1,37 +1,22 @@
 "use client";
 
 import { Badge, Lock } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
 export function LoginCard() {
-  const router = useRouter();
-  const [operatorId, setOperatorId] = useState("");
-  const [passcode, setPasscode] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    if (operatorId.trim().length < 6) {
-      toast.error("Please enter a valid 6-digit operator ID");
-      return;
+    setLoading(true);
+    try {
+      await signIn("keycloak", { callbackUrl: "/dashboard" });
+    } catch {
+      toast.error("Authentication failed. Please try again.");
+      setLoading(false);
     }
-
-    if (!passcode.trim()) {
-      toast.error("Please enter your passcode");
-      return;
-    }
-
-    if (rememberMe) {
-      localStorage.setItem("ontime.operatorId", operatorId);
-    } else {
-      localStorage.removeItem("ontime.operatorId");
-    }
-
-    toast.success("Login successful");
-    router.push("/dashboard");
   };
 
   return (
@@ -61,12 +46,9 @@ export function LoginCard() {
               <input
                 id="operator-id"
                 type="text"
-                inputMode="numeric"
-                required
-                value={operatorId}
-                onChange={(event) => setOperatorId(event.target.value)}
-                placeholder="Enter your 6-digit ID"
-                className="block w-full rounded-lg border-0 bg-surface-container-high py-3 pl-10 pr-3 text-sm text-on-surface placeholder:text-on-surface-variant outline-none transition focus:bg-surface-container-lowest focus:ring-1 focus:ring-primary"
+                disabled
+                placeholder="Provided by Keycloak"
+                className="block w-full rounded-lg border-0 bg-surface-container-high py-3 pl-10 pr-3 text-sm text-on-surface-variant placeholder:text-on-surface-variant outline-none opacity-60"
               />
             </div>
           </div>
@@ -85,38 +67,19 @@ export function LoginCard() {
               <input
                 id="passcode"
                 type="password"
-                required
-                value={passcode}
-                onChange={(event) => setPasscode(event.target.value)}
-                placeholder="••••••••"
-                className="block w-full rounded-lg border-0 bg-surface-container-high py-3 pl-10 pr-3 text-sm text-on-surface placeholder:text-on-surface-variant outline-none transition focus:bg-surface-container-lowest focus:ring-1 focus:ring-primary"
+                disabled
+                placeholder="Provided by Keycloak"
+                className="block w-full rounded-lg border-0 bg-surface-container-high py-3 pl-10 pr-3 text-sm text-on-surface-variant placeholder:text-on-surface-variant outline-none opacity-60"
               />
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-sm">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(event) => setRememberMe(event.target.checked)}
-                className="h-4 w-4 rounded border-0 bg-surface-container-high text-primary focus:ring-primary"
-              />
-              <span className="ml-2 text-on-surface-variant">Remember me</span>
-            </label>
-            <button
-              type="button"
-              className="font-medium text-primary hover:text-primary-container"
-            >
-              Forgot Passcode?
-            </button>
-          </div>
-
           <button
             type="submit"
-            className="w-full rounded-lg bg-gradient-to-br from-primary to-primary-container px-4 py-3 text-sm font-semibold text-white shadow-soft transition-all hover:from-primary-container hover:to-primary active:scale-[0.98]"
+            disabled={loading}
+            className="w-full rounded-lg bg-gradient-to-br from-primary to-primary-container px-4 py-3 text-sm font-semibold text-white shadow-soft transition-all hover:from-primary-container hover:to-primary active:scale-[0.98] disabled:opacity-60"
           >
-            Initiate Shift
+            {loading ? "Redirecting to login..." : "Initiate Shift"}
           </button>
         </form>
       </div>
