@@ -52,7 +52,7 @@ type AdminStore = {
   updateBusStatus: (id: string, status: BusStatus) => Promise<void>;
   deleteBus: (id: string) => Promise<void>;
 
-  addDriver: (data: { name: string; license_number: string; phone?: string }) => Promise<void>;
+  addDriver: (data: { name: string; license_number: string; phone?: string; username: string; password: string }) => Promise<void>;
   deleteDriver: (id: string) => Promise<void>;
   assignBusToRoute: (busId: string, routeId: string) => Promise<void>;
   unassignBus: (busId: string) => Promise<void>;

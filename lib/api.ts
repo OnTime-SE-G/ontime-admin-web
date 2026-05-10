@@ -131,7 +131,7 @@ export const unassignBus = (busId: string) =>
 export const fetchDrivers = () =>
   apiFetch<ApiDriver[]>('/api/v1/admin/fleet/drivers');
 
-export const createDriver = (data: { name: string; license_number: string; phone?: string }) =>
+export const createDriver = (data: { name: string; license_number: string; phone?: string; username: string; password: string }) =>
   apiFetch<ApiDriver>('/api/v1/admin/fleet/drivers', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

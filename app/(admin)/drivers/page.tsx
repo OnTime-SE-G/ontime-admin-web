@@ -31,8 +31,8 @@ export default function DriversPage() {
     if (form.password !== form.confirmPassword) { toast.error("Passwords do not match"); return; }
     setSubmitting(true);
     try {
-      await addDriver({ name: form.name, license_number: form.licenseNumber, phone: form.phone || undefined });
-      toast.success("Driver added");
+      await addDriver({ name: form.name, license_number: form.licenseNumber, phone: form.phone || undefined, username: form.licenseNumber, password: form.password });
+      toast.success("Driver added — login: " + form.licenseNumber);
       setIsAddOpen(false);
       setForm(defaultForm);
     } catch { toast.error("Failed to add driver"); } finally { setSubmitting(false); }
