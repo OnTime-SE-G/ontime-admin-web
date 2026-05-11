@@ -159,8 +159,8 @@ export const createSchedule = (data: {
 
 // ── Planned Trips ─────────────────────────────────────────────────────────────
 
-export const fetchTodayTrips = () =>
-  apiFetch<ApiPlannedTrip[]>('/api/v1/admin/fleet/planned-trips/today');
+export const fetchTodayTrips = (targetDate?: string) =>
+  apiFetch<ApiPlannedTrip[]>(`/api/v1/admin/fleet/planned-trips/today${targetDate ? `?target_date=${targetDate}` : ''}`);
 
 export const generateTrips = (targetDate: string) =>
   apiFetch<Record<string, unknown>>(
