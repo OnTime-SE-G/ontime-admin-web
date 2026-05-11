@@ -201,6 +201,7 @@ export const useAdminStore = create<AdminStore>((set) => ({
       fleet_code: payload.busType || "Standard",
       plate_number: payload.busNumber,
       capacity: payload.seatCapacity,
+      status: payload.status.toLowerCase(),
     });
     // Re-fetch from API to get server-assigned ID and reflect real state
     try {

@@ -98,7 +98,7 @@ export const fetchAllAdminBuses = () =>
 export const fetchLiveBuses = () =>
   apiFetch<ApiLiveBus[]>('/api/v1/buses/live');
 
-export const createBus = (data: { fleet_code: string; plate_number: string; capacity: number }) =>
+export const createBus = (data: { fleet_code: string; plate_number: string; capacity: number; status: string }) =>
   apiFetch<ApiLiveBus>('/api/v1/admin/fleet/buses', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
