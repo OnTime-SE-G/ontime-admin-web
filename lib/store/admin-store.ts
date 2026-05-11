@@ -44,7 +44,7 @@ type AdminStore = {
   loadBuses: () => Promise<void>;
   loadDrivers: () => Promise<void>;
   loadSchedules: () => Promise<void>;
-  loadTodayTrips: () => Promise<void>;
+  loadTodayTrips: (targetDate?: string) => Promise<void>;
 
   deleteRoute: (id: string) => Promise<void>;
 
@@ -176,10 +176,12 @@ export const useAdminStore = create<AdminStore>((set) => ({
     }
   },
 
-  loadTodayTrips: async () => {
+  loadTodayTrips: async (targetDate?: string) => {
     set({ isLoading: true });
     try {
-      const data = await fetchTodayTrips();
+      // If no date provided, use local "today" to ensure consistency with what we generate
+      const dateStr = targetDate ?? new Date().toISOString().split("T")[0]!;
+      const data = await fetchTodayTrips(dateStr);
       set({ plannedTrips: data.map(mapApiTrip), isLoading: false });
     } catch (e) {
       console.error("[AdminStore] loadTodayTrips failed:", e);
