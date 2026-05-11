@@ -27,6 +27,7 @@ export default function DriversPage() {
 
   const submitAdd = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (form.name.trim().split(/\s+/).length < 2) { toast.error("Please enter full name (first and last name)"); return; }
     if (form.password.length < 6) { toast.error("Password must be at least 6 characters"); return; }
     if (form.password !== form.confirmPassword) { toast.error("Passwords do not match"); return; }
     setSubmitting(true);
