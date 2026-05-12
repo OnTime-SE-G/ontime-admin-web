@@ -169,6 +169,7 @@ export default function BusesPage() {
             <table className="w-full text-sm">
               <thead className="bg-surface-container text-on-surface-variant uppercase text-xs tracking-wider">
                 <tr>
+                  <th className="px-6 py-3 text-left">ID</th>
                   <th className="px-6 py-3 text-left">Plate Number</th>
                   <th className="px-6 py-3 text-left">Fleet Code</th>
                   <th className="px-6 py-3 text-left">Capacity</th>
@@ -182,6 +183,7 @@ export default function BusesPage() {
                   const assigned = routeName(bus.routeId);
                   return (
                     <tr key={bus.id} className="hover:bg-surface-container-low transition-colors">
+                      <td className="px-6 py-4 font-mono text-xs text-on-surface-variant">{bus.id}</td>
                       <td className="px-6 py-4 font-semibold text-on-surface">{bus.busNumber}</td>
                       <td className="px-6 py-4 text-on-surface-variant">{bus.busType || "—"}</td>
                       <td className="px-6 py-4 text-on-surface-variant">{bus.seatCapacity}</td>
