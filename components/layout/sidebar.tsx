@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 
 type SidebarProps = {
   isOpen: boolean;
@@ -96,14 +97,16 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         </nav>
 
         <div className="mt-auto border-t border-slate-200/70 pt-4">
-          <Link
-            href="/login"
-            onClick={onClose}
+          <button
+            onClick={() => {
+              onClose();
+              signOut({ callbackUrl: "/" });
+            }}
             className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
           >
             <LogOut size={18} />
             Logout
-          </Link>
+          </button>
         </div>
       </aside>
     </>
